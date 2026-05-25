@@ -14,7 +14,7 @@ device = "cuda"
 def setup_logger(log_dir: pathlib.Path) -> None:
     log_dir.mkdir(exist_ok=True, parents=True)
 
-    log_file = open(log_dir / "log.txt", "w")
+    log_file = open(log_dir / "log.txt", "a")
     file_console = Console(file=log_file, width=150)
     logging.basicConfig(
         level=logging.INFO,
@@ -99,3 +99,10 @@ if __name__ == '__main__':
 
     opt = parser.parse_args()
     main(opt)
+
+
+
+"""
+python evaluation.py --checkpoint reactot-pretrained.ckpt --solver ode --nfe 10
+
+"""

@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: oa_reactdiff
-Version: 0.0.1
+Version: 0.0.1.post35+ga1fa217
 Summary: A object-wise SE(3) diffusion model for elementary reaction generation.
 Author-email: "Chenru Duan, and Yuanqi Du" <duanchenru@gmail.com>
 License: MIT

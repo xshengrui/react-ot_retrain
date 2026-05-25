@@ -276,7 +276,8 @@ trainer = Trainer(
     gradient_clip_val=training_config["gradient_clip_val"],
     limit_train_batches=200,
     limit_val_batches=20,
-    replace_sampler_ddp=False,
+    replace_sampler_ddp=False, # 在 PyTorch Lightning 2.x 中已移除,这里有我很奇怪
+
     # resume_from_checkpoint=checkpoint_path,
     # max_time="00:10:00:00",
 )
