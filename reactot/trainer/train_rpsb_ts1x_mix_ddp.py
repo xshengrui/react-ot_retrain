@@ -17,8 +17,8 @@ from reactot.model import LEFTNet
 from ipdb import set_trace as debug
 import colored_traceback.always
 
-# import wandb
-# wandb.init(mode="offline")
+import wandb
+wandb.init(mode="offline")
 
 class OPT:
     def __init__(
@@ -30,19 +30,20 @@ class OPT:
         self.method = method
         self.atol = 1e-2
         self.rtol = 1e-2
-    
+
 opt = OPT(solver="ddpm", method="midpoint")
 
 model_type = "leftnet"
 version = "ts_guess_NEBCI-xtb-ema"
-project = "react"
+project = "react-mix-dim"
 # ---EGNNDynamics---
 leftnet_config = dict(
     pos_require_grad=False,
     cutoff=10.0,
     num_layers=6,
-    hidden_channels=196,
-    num_radial=96,
+    # hidden_channels=196,
+    hidden_channels=392,
+    num_radial=192,
     in_hidden_channels=8,
     reflect_equiv=True,
     legacy=True,
@@ -68,10 +69,11 @@ optimizer_config = dict(
 T_0 = 10
 T_mult = 1
 training_config = dict(
-    datadir="reactot/data/data_new_split/",
+    datadir="reactot/data/t1x_rgd1_mix",
     remove_h=False,
-    bz=64,
-    num_workers=0,
+    dataset_device="cpu",
+    bz=32,
+    num_workers=4,
     clip_grad=True,
     gradient_clip_val=None,
     ema=True,
@@ -95,12 +97,18 @@ training_config = dict(
     #     eta_min=0,
     # ),  #cos
     use_sampler=True,
+    # sampler_config=dict(
+    #     max_num=2800,  # This is for 16GB GPU; Scale linearly with memory
+    #     mode="node^2",
+    #     shuffle=True,
+    #     ddp=False,
+    # )
     sampler_config=dict(
-        max_num=2800,  # This is for 16GB GPU; Scale linearly with memory
-        mode="node^2",
-        shuffle=True,
-        ddp=False,
-    )
+    max_num=1000,
+    mode="node^2",
+    shuffle=True,
+    ddp=True,
+)
 )
 training_data_frac = 1.0 if not training_config["reflection"] else 0.5
 
@@ -136,7 +144,7 @@ noise_schedule: str = "cosine"  # not used
 
 # ---SB---
 mapping: str = "R+P->TS"
-mapping_initial: str = "RP"  # RP for (r+p)/2, GUESS for guessing 
+mapping_initial: str = "RP"  # RP for (r+p)/2, GUESS for guessing
 # nfe: int = 25
 nfe = 50
 ot_ode: bool = True
@@ -154,7 +162,8 @@ run_name = f"{model_type}-{version}-" + str(uuid4()).split("-")[-1]
 # checkpoint_path = "/home/ubuntu/efs/reactot/reactot/trainer/checkpoint/TSDiff/leftnet-xtb-from-dftckpt-cd01d85c5152/ddpm-epoch=189-val-totloss=619.05.ckpt"
 # checkpoint_path = "/home/ubuntu/efs/reactot/reactot/trainer/checkpoint/RPSB-FT-Schedule/leftnet-xtb-c79fcfe0518d/sb-epoch=349-val_ep_scaled_err=0.0483.ckpt"
 # checkpoint_path = "/inspire/qb-ilm/project/chemicalreaction/czxs25220150/projects/react-ot_retrain/pretrained-ts1x-diff.ckpt"
-checkpoint_path = "/inspire/qb-ilm/project/chemicalreaction/czxs25220150/projects/react-ot_retrain/our_new_pretrained-ts1x-diff.ckpt"
+checkpoint_path = "/inspire/qb-ilm/project/chemicalreaction/czxs25220150/projects/react-ot_retrain/our_new_pretrained-ts1x-rgd1-diff-h200-dim.ckpt"
+# checkpoint_path = "/inspire/qb-ilm/project/chemicalreaction/czxs25220150/projects/react-ot_retrain/checkpoint/react-mix2/None/sb-epoch=009-val_ep_scaled_err=0.0849.ckpt"
 
 # checkpoint_path = None
 use_pretrain: bool = True
@@ -228,9 +237,9 @@ if trainer is None or (isinstance(trainer, Trainer) and trainer.is_global_zero):
     )
     try:  # Avoid errors for creating wandb instances multiple times
         wandb_logger.experiment.config.update(config)
-        wandb_logger.watch(
-            ddpm.ddpm.dynamics, log="all", log_freq=100, log_graph=False
-        )
+        # wandb_logger.watch(
+        #     ddpm.ddpm.dynamics, log="all", log_freq=100, log_graph=False
+        # )
     except:
         pass
 
@@ -257,10 +266,15 @@ callbacks = [earlystopping, checkpoint_callback, TQDMProgressBar(), lr_monitor]
 strategy = None
 devices = [0]
 strategy = DDPStrategy(find_unused_parameters=True)
+# strategy = DDPStrategy(find_unused_parameters=False)
 if strategy is not None:
     devices = list(range(torch.cuda.device_count()))
 if len(devices) == 1:
     strategy = None
+
+
+
+
 
 if training_config["ema"]:
     callbacks.append(
@@ -275,7 +289,6 @@ trainer = Trainer(
     # max_epochs=3000,
     max_epochs=200,
     accelerator="gpu",
-    # num_sanity_val_steps=0,  # 添加这一行，跳过开头的验证检查
     deterministic=False,
     devices=devices,
     strategy=strategy,
@@ -285,12 +298,21 @@ trainer = Trainer(
     logger=wandb_logger,
     accumulate_grad_batches=1,
     gradient_clip_val=training_config["gradient_clip_val"],
-    limit_train_batches=200,
+    limit_train_batches=1600,
     limit_val_batches=20,
-    replace_sampler_ddp=False, # 在 PyTorch Lightning 2.x 中已移除,这里有我很奇怪
+    replace_sampler_ddp=False, #
 
     # resume_from_checkpoint=checkpoint_path,
     # max_time="00:10:00:00",
 )
 
 trainer.fit(ddpm)
+
+
+
+"""
+
+python -m reactot.trainer.train_rpsb_ts1x_mix_ddp | tee oa_mix_dim_train_ddp.log
+
+
+"""

@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# virtual env
+.env/
+.venv/
+venv/
+env/
+
+# logs
+*.log
+logs/
+wandb/
+
+# dataset / outputs
+data/
+datasets/
+outputs/
+runs/
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+
+# system / editor
+.DS_Store
+.vscode/
+.idea/
