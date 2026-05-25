@@ -23,6 +23,10 @@ checkpoints/
 *.pt
 *.pth
 *.ckpt
+*.zip
+
+
+
 
 # system / editor
 .DS_Store
