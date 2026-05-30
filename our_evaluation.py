@@ -231,7 +231,20 @@ python our_evaluation.py \
   --datadir reactot/data/t1x_rgd1_mix \
   --split test \
   --batch-size 72 \
-  --nfe 100    
+  --nfe 100   
+  
+  
+  
+python our_evaluation.py \
+  --solver ode \
+  --method midpoint \
+  --checkpoint   rpsb_ts1x_mix_dim-0.ckpt \
+  --datadir reactot/data/t1x_rgd1_mix \
+  --split test \
+  --batch-size 72 \
+  --nfe 100 
+  
+  
  
 
 """
